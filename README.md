@@ -3,6 +3,11 @@
 - [API root endpoint](https://town368.csie.ntu.edu.tw)
 - [document](https://wyde.github.io/town368)
 
+## 開發本 API 的動機
+![](https://i.imgur.com/kAVhEDj.png)
+
+![](https://i.imgur.com/TwtJUaB.png)
+
 ## 技術棧
 - interactive shell：jupyter notebook
 - 爬蟲：requests
