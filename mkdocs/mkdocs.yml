@@ -1,0 +1,7 @@
+site_name: town368 API Document
+theme: "material"
+pages:
+    - ['index.md', 'Home']
+    - ['about.md', 'About']
+site_dir:
+    '../docs'

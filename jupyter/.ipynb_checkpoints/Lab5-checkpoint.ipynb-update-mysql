@@ -1,0 +1,318 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Lab5 draft 目標：update 資料庫"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 首先要建立或 import 這些 model(class) \n",
+    "- 為了各個 Jupyter 獨立顯示，沒有從 Lab3 import，而是再新增一次，但資料庫內已經有 data "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "from sqlalchemy import DateTime, TIMESTAMP, text, Column, Integer, String\n",
+    "from sqlalchemy.ext.declarative import declarative_base\n",
+    "Base = declarative_base()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "class Station(Base):\n",
+    "    __tablename__ = 'station'\n",
+    "    sid = Column(Integer, primary_key=True, autoincrement=False)\n",
+    "    district = Column(String(8), unique=True)\n",
+    "    \n",
+    "    def __repr__(self):\n",
+    "        return 'sid: %d, district: %s' % (self.sid, self.district)\n",
+    "\n",
+    "class Report(Base):\n",
+    "    __tablename__ = 'report'\n",
+    "    rid = Column(Integer, primary_key=True)\n",
+    "    station_sid = Column(Integer)\n",
+    "    update_t = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))\n",
+    "    record_t = Column(DateTime)\n",
+    "    weekday = Column(String(3))\n",
+    "    wx = Column(String(32))\n",
+    "    t = Column(Integer)\n",
+    "    at = Column(Integer)\n",
+    "    beaufort = Column(String(16))\n",
+    "    wind_dir = Column(String(3))\n",
+    "    rh = Column(String(4))\n",
+    "    pop = Column(String(4))\n",
+    "    ci = Column(String(8))\n",
+    "    \n",
+    "    def __repr__(self):\n",
+    "        return \"\"\"rid: %d, \\nstation_sid: %d, \\nupdate_t: %s, \\nrecord_t: %s, \\nweekday: %s, \\nwx: %s, \\\n",
+    "                \\nt: %d, \\nat: %d, \\nbeaufort: %s, \\nwind_dir: %s, \\nrh: %s, \\npop: %s, \\nci: %s\"\"\" \\\n",
+    "                % (self.rid, self.station_sid, str(self.update_t), str(self.record_t), self.weekday, \\\n",
+    "                    self.wx, self.t, self.at, self.beaufort, self.wind_dir, self.rh, self.pop, self.ci)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 再來要 create engine 和 建立 Session 的實例，且跟 engine bind 在一起"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "from sqlalchemy import create_engine\n",
+    "engine = create_engine('mysql+mysqldb://dbuser:dbuser1234@localhost:3306/weather_report?charset=utf8', max_overflow=5)\n",
+    "Base.metadata.bind = engine"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## function"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "from sqlalchemy.orm import sessionmaker"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def update_mysql_data(ta, row):\n",
+    "    ta.wx = row['wx']\n",
+    "    ta.t = row['t']\n",
+    "    ta.at = row['at']\n",
+    "    ta.beaufort = row['beaufort']\n",
+    "    ta.wind_dir = row['wind_dir']\n",
+    "    ta.rh = row['rh']\n",
+    "    ta.pop = row['pop']\n",
+    "    ta.ci = row['ci']"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def add_mysql_data(row):\n",
+    "    ta = Report()\n",
+    "    ta.station_sid = row['station_sid']\n",
+    "    ta.record_t = row['record_t']\n",
+    "    ta.weekday = row['weekday']\n",
+    "    ta.wx = row['wx']\n",
+    "    ta.t = row['t']\n",
+    "    ta.at = row['at']\n",
+    "    ta.beaufort = row['beaufort']\n",
+    "    ta.wind_dir = row['wind_dir']\n",
+    "    ta.rh = row['rh']\n",
+    "    ta.pop = row['pop']\n",
+    "    ta.ci = row['ci']\n",
+    "    return ta"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def recreate_table_report():\n",
+    "    if engine.dialect.has_table(engine, 'report'):\n",
+    "        Base.metadata.tables['report'].drop(engine)\n",
+    "        print('table report has been droped')\n",
+    "    Base.metadata.tables['report'].create(engine)\n",
+    "    print('table report has been created...')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## main function"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "Session = sessionmaker(engine)\n",
+    "session = Session()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "6300300"
+      ]
+     },
+     "execution_count": 18,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "district = '台北市大安區'\n",
+    "station = session.query(Station).filter_by(district=district).all()[0]\n",
+    "station.sid"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "table report has been droped\n",
+      "table report has been created...\n"
+     ]
+    }
+   ],
+   "source": [
+    "#recreate_table_report()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "infile_csv = '082321.csv' #082321 082323 082401 082409 082413 082414 \n",
+    "df = pd.read_csv(infile_csv, sep=',')\n",
+    "#df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "2017-08-23 21:00 not found, new record has been created\n",
+      "2017-08-24 00:00 not found, new record has been created\n",
+      "2017-08-24 03:00 not found, new record has been created\n",
+      "2017-08-24 06:00 not found, new record has been created\n",
+      "2017-08-24 09:00 not found, new record has been created\n",
+      "2017-08-24 12:00 not found, new record has been created\n",
+      "2017-08-24 15:00 not found, new record has been created\n",
+      "2017-08-24 18:00 not found, new record has been created\n",
+      "2017-08-24 21:00 not found, new record has been created\n",
+      "2017-08-25 00:00 not found, new record has been created\n",
+      "2017-08-25 03:00 not found, new record has been created\n",
+      "2017-08-25 06:00 not found, new record has been created\n",
+      "2017-08-25 09:00 not found, new record has been created\n",
+      "2017-08-25 12:00 not found, new record has been created\n",
+      "2017-08-25 15:00 not found, new record has been created\n",
+      "2017-08-25 18:00 not found, new record has been created\n",
+      "2017-08-25 21:00 not found, new record has been created\n"
+     ]
+    }
+   ],
+   "source": [
+    "for idx, row in df.iterrows():\n",
+    "    record_t = row['record_t']\n",
+    "    try:\n",
+    "        record = session.query(Report).filter_by(record_t=record_t).all()[0]\n",
+    "        update_mysql_data(record, row)\n",
+    "        session.commit()\n",
+    "        print(\"%s has been found in mysql report table\" % record_t)\n",
+    "    except:\n",
+    "        record = add_mysql_data(row)\n",
+    "        session.add(record)\n",
+    "        session.commit()\n",
+    "        print(\"%s not found, new record has been created\" % record_t)\n",
+    "session.close()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.4.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

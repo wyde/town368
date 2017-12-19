@@ -1,0 +1,8 @@
+./config/default.py
+*.pyc
+*.pyo
+*.swp
+__pycache__/
+config/default.py
+*.sock
+*.log
