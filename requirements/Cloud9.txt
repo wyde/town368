@@ -73,7 +73,7 @@ terminado==0.6
 testpath==0.3.1
 tornado==4.5.1
 traitlets==4.3.2
-Twisted==17.5.0
+Twisted==22.10.0
 typing==3.6.2
 urllib3==1.22
 w3lib==1.18.0
